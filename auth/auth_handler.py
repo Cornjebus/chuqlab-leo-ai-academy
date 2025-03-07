@@ -161,49 +161,13 @@ def authenticate():
     # Create tabs for login and registration
     tab1, tab2 = st.tabs(["Login", "Register"])
     
-    # Handle demo login buttons (must be defined before forms)
-    if "demo_user_clicked" not in st.session_state:
-        st.session_state.demo_user_clicked = False
-        
-    if "demo_admin_clicked" not in st.session_state:
-        st.session_state.demo_admin_clicked = False
-    
-    # Function to handle the demo user button click
-    def demo_user_login():
-        st.session_state.demo_user_clicked = True
-    
-    # Function to handle the demo admin button click
-    def demo_admin_login():
-        st.session_state.demo_admin_clicked = True
-    
     with tab1:  # Login tab
         st.subheader("Login to Your Account")
-        
-        # Quick access with demo accounts - place OUTSIDE the form
-        st.markdown("<p style='text-align: center; margin-top: 0.5rem;'>Demo accounts:</p>", unsafe_allow_html=True)
-        demo_col1, demo_col2 = st.columns(2)
-        
-        # Demo user button
-        with demo_col1:
-            st.button("User Demo", use_container_width=True, key="demo_user_btn", on_click=demo_user_login)
-        
-        # Admin user button
-        with demo_col2:
-            st.button("Admin Demo", use_container_width=True, key="demo_admin_btn", on_click=demo_admin_login)
-        
-        # Handle demo login before the form
-        if st.session_state.demo_user_clicked:
-            st.session_state.demo_user_clicked = False  # Reset flag
-            handle_login("demo", "demo123")
-            
-        if st.session_state.demo_admin_clicked:
-            st.session_state.demo_admin_clicked = False  # Reset flag
-            handle_login("admin", "admin123")
         
         # Login form
         with st.form("login_form"):
             st.markdown('<div class="form-group">', unsafe_allow_html=True)
-            username = st.text_input("Username", key="login_username")
+            username = st.text_input("Email", key="login_username")
             st.markdown('</div>', unsafe_allow_html=True)
             
             st.markdown('<div class="form-group">', unsafe_allow_html=True)
@@ -221,99 +185,65 @@ def authenticate():
                 handle_login(username, password)
     
     with tab2:  # Registration tab
-        st.subheader("Create a New Account")
+        st.subheader("Create New Account")
         
-        # Registration form
         with st.form("registration_form"):
-            st.markdown('<div class="form-group">', unsafe_allow_html=True)
-            reg_username = st.text_input("Username", key="register_username")
-            st.markdown('</div>', unsafe_allow_html=True)
+            name = st.text_input("Full Name", key="reg_name")
+            email = st.text_input("Organization Email Address", key="reg_email",
+                                help="Please use your organization email address. Personal email addresses (like Gmail, Yahoo) are not allowed.")
+            agency = st.text_input("Organization Name", key="reg_agency")
+            password = st.text_input("Password", type="password", key="reg_password")
+            confirm_password = st.text_input("Confirm Password", type="password", key="reg_confirm_password")
             
-            st.markdown('<div class="form-group">', unsafe_allow_html=True)
-            reg_name = st.text_input("Full Name", key="register_name")
-            st.markdown('</div>', unsafe_allow_html=True)
-            
-            st.markdown('<div class="form-group">', unsafe_allow_html=True)
-            reg_email = st.text_input("Organization Email Address (required)", key="register_email")
-            st.markdown('</div>', unsafe_allow_html=True)
-            
-            st.markdown('<div class="form-group">', unsafe_allow_html=True)
-            reg_agency = st.text_input("Organization Name (required)", key="register_agency")
-            st.markdown('</div>', unsafe_allow_html=True)
-            
-            st.markdown('<div class="form-group">', unsafe_allow_html=True)
-            reg_password = st.text_input("Password", type="password", key="register_password")
-            st.markdown('</div>', unsafe_allow_html=True)
-            
-            st.markdown('<div class="form-group">', unsafe_allow_html=True)
-            reg_password_confirm = st.text_input("Confirm Password", type="password", key="register_password_confirm")
-            st.markdown('</div>', unsafe_allow_html=True)
-            
-            # Add help text for email requirement
-            st.markdown("""
-            <div style='font-size: 0.8rem; color: #666; margin-bottom: 1rem;'>
-                Note: Registration requires an organization email address. 
-                Personal email addresses (Gmail, Yahoo, etc.) are not allowed.
-            </div>
-            """, unsafe_allow_html=True)
-            
-            # Display messages if any
+            # Display error/success messages
             if st.session_state.register_error:
                 st.markdown(f'<div class="auth-message auth-error">{st.session_state.register_error}</div>', unsafe_allow_html=True)
-            
             if st.session_state.register_success:
                 st.markdown(f'<div class="auth-message auth-success">{st.session_state.register_success}</div>', unsafe_allow_html=True)
             
             submitted = st.form_submit_button("Register", type="primary", use_container_width=True)
             
-            # Handle registration submission
             if submitted:
-                handle_registration(reg_username, reg_password, reg_password_confirm, reg_name, reg_email, reg_agency)
-    
-    # Create demo accounts if they don't exist
-    create_demo_accounts()
+                handle_registration(name, email, agency, password, confirm_password)
     
     st.markdown('</div>', unsafe_allow_html=True)
 
 def handle_login(username, password):
-    """Handle the login process."""
-    if not username or not password:
-        st.session_state.login_error = "Please enter both username and password"
-    else:
-        try:
-            # Verify credentials
-            user_db = UserDatabase()
-            if user_db.verify_user(username, password):
-                # Login successful
-                user_data = user_db.get_user_data(username)
-                
-                # Update session state
-                st.session_state.authenticated = True
-                st.session_state.username = username
-                st.session_state.name = user_data.get('name', username)
-                
-                # Load user progress
-                st.session_state.lesson_progress = user_data.get('lesson_progress', 0)
-                
-                # Clear login error state
-                st.session_state.login_error = None
-                
-                # Show success message and redirect
-                st.success(f"Welcome back, {user_data.get('name', username)}!")
-                st.rerun()
-            else:
-                st.session_state.login_error = "Invalid username or password"
-        except Exception as e:
-            logger.error(f"Login error: {e}")
-            st.session_state.login_error = f"An error occurred during login: {str(e)}"
+    """Handle login form submission."""
+    try:
+        # Check if it's the admin account
+        if username == "cornelius@chuqlab.com" and password == "Amari197$Tara":
+            st.session_state.authenticated = True
+            st.session_state.username = "admin"
+            st.session_state.name = "Admin"
+            st.session_state.login_error = None
+            st.rerun()
+            return
 
-def handle_registration(username, password, password_confirm, name, email="", agency=""):
+        # Regular user authentication
+        user_db = UserDatabase()
+        if user_db.verify_user(username, password):
+            st.session_state.authenticated = True
+            st.session_state.username = username
+            user_data = user_db.get_user_data(username)
+            st.session_state.name = user_data.get('name', username)
+            st.session_state.login_error = None
+            st.rerun()
+        else:
+            st.session_state.login_error = "Invalid username or password"
+            st.session_state.authenticated = False
+    except Exception as e:
+        logger.error(f"Login error: {str(e)}")
+        st.session_state.login_error = "An error occurred during login"
+        st.session_state.authenticated = False
+
+def handle_registration(name, email, agency, password, confirm_password):
     """Handle the registration process."""
     # Validate inputs
-    if not username or not password or not name or not email or not agency:
+    if not name or not email or not agency or not password or not confirm_password:
         st.session_state.register_error = "Please fill in all required fields"
         st.session_state.register_success = None
-    elif password != password_confirm:
+    elif password != confirm_password:
         st.session_state.register_error = "Passwords do not match"
         st.session_state.register_success = None
     elif len(password) < 6:
@@ -325,7 +255,7 @@ def handle_registration(username, password, password_confirm, name, email="", ag
             user_db = UserDatabase()
             
             # Create the user with agency info
-            success, error_msg = user_db.create_user(username, password, name, email, agency)
+            success, error_msg = user_db.create_user(username=email, password=password, name=name, email=email, agency=agency)
             
             if success:
                 st.session_state.register_success = "Registration successful! You can now log in."
