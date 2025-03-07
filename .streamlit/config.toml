@@ -1,0 +1,29 @@
+[theme]
+# Primary accent color for interactive elements
+primaryColor = "#1E3A8A"  # Navy blue - represents trust and professionalism
+
+# Background color for the main content area
+backgroundColor = "#F8F9FA"  # Light gray - clean and readable
+
+# Background color for sidebar and most interactive widgets
+secondaryBackgroundColor = "#E2E8F0"  # Light blue-gray
+
+# Color used for almost all text
+textColor = "#1A202C"  # Dark gray - good contrast and readability
+
+# Font family for all text in the app (serif fonts are better for reading)
+font = "sans serif"
+
+[server]
+# Server settings
+enableCORS = true
+enableXsrfProtection = true
+address = "localhost"
+port = 8501
+
+[browser]
+# Set the default page title
+gatherUsageStats = false
+
+[deprecation]
+showPyplotGlobalUse = false 
