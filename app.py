@@ -17,8 +17,15 @@ from components.debug import display_debug
 from components.admin import display_admin
 from utils.session_state import initialize_session_state
 
-# Load environment variables
+# Load environment variables from .env file for local development
 load_dotenv()
+
+# For deployment on Streamlit Cloud, load secrets into os.environ
+if hasattr(st, 'secrets'):
+    # Copy all Streamlit secrets to environment variables for compatibility
+    for key, value in st.secrets.items():
+        os.environ[key] = str(value)
+    logging.info("Loaded environment variables from Streamlit secrets")
 
 # Configure logging
 logging.basicConfig(

@@ -3,6 +3,7 @@ import logging
 import openai
 from openai import OpenAI  # Import the client class
 import requests
+import streamlit as st
 from dotenv import load_dotenv
 
 # Load environment variables if not already loaded
@@ -12,11 +13,24 @@ load_dotenv()
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
-# Set OpenAI API key if available
-api_key = os.getenv("OPENAI_API_KEY", "").strip()  # Remove any whitespace
+# Set OpenAI API key if available - check both Streamlit secrets and environment variables
+api_key = None
+
+# First check Streamlit secrets
+if hasattr(st, "secrets") and "OPENAI_API_KEY" in st.secrets:
+    api_key = st.secrets["OPENAI_API_KEY"].strip()
+    logger.info("OpenAI API key loaded from Streamlit secrets")
+
+# Fall back to environment variables if not found in secrets
+if not api_key:
+    api_key = os.getenv("OPENAI_API_KEY", "").strip()
+    if api_key:
+        logger.info("OpenAI API key loaded from environment variables")
+
+# Initialize OpenAI client if API key is available
 if api_key:
     # Log key details for debugging
-    logger.debug(f"API key found (starts with: {api_key[:7]})")
+    logger.debug(f"API key found (starts with: {api_key[:4]}...)")
     logger.debug(f"API key length: {len(api_key)}")
     logger.debug(f"API key format valid: {api_key.startswith('sk-')}")
     
@@ -33,7 +47,7 @@ if api_key:
             logger.error(f"Error creating OpenAI client: {str(e)}")
             client = None
 else:
-    logger.warning("No OpenAI API key found in environment variables. Check your .env file.")
+    logger.warning("No OpenAI API key found in secrets or environment variables. Check your configuration.")
     client = None
 
 def get_available_models():
